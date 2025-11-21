@@ -1,7 +1,0 @@
-"0","library(ggplot2)"
-"0","f1 <- ggplot(btc_data,geom_line(x = Date, y= close))"
-"1","[1m[33mError[39m in `ggplot()`:[22m
-[38;5;232m[33m![38;5;232m `mapping` must be created by `aes()`.
-[31m✖[38;5;232m You've supplied a [34m<LayerInstance>[38;5;232m object.[39m
-[90mRun `]8;;x-r-run:rlang::last_trace()rlang::last_trace()]8;;` to see where the error occurred.[39m
-"

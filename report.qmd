@@ -1,14 +1,17 @@
 ---
-title: "report"
-format: html
+title: "Idiosyncratic Volatility and Social Media Sentiment: An Event Study of High-Profile Endorcements in Cryptocurrency Markets"
+format: 
+  html: 
+    code-fold: true
+    code-summary: "show code"
 editor: visual
+message: false
+warning: false
 ---
 
-# Idiosyncratic Volatility ands Social Media Sentiment: An Event Study of High-Profile Endorcements in Cryptocurrency Markets
+### Abstract
 
-## Abstract
-
-The social media has an increasing impact on the financial market. This report use the data from 2024 to 2025, analyses Elon musk's 推文对于BTC价格的短期冲击 by event study. We find that the
+The social media has an increasing impact on the financial market. This report use the data from 2024 to 2025, analyses Elon musk's short-term impact of tweets on BTC prices by event study. We find that the
 
 Key words: Cryptocurrency; Event Study; Behavioral Finance; Social Media
 
@@ -16,7 +19,8 @@ Key words: Cryptocurrency; Event Study; Behavioral Finance; Social Media
 library(quantmod)
 library(tidyverse)
 library(lubridate)
-
+library(knitr)
+library(DT)
 
 # extract the BTC data(sourced from Yahoo Finance)
 getSymbols("BTC-USD",src = "yahoo", from = "2024-01-01")
@@ -24,30 +28,67 @@ getSymbols("BTC-USD",src = "yahoo", from = "2024-01-01")
 btc_data <- as.data.frame(`BTC-USD`) |>
   rownames_to_column(var = 'Date')|>
   mutate(Date = as.Date(Date))|>
-  select(Date, Close = `BTC-USD.Close`)
+  select(Date, Close_price = `BTC-USD.Close`)
 
-head(btc_data)
+datatable(
+  btc_data,
+  filter = "top",
+  extensions = "Buttons",
+  options = list(
+    pageLength = 10,
+    autoWidth = TRUE,
+    dom = "Bfrtip",
+    buttons = c("copy","csv","excel","pdf","print")
+  )
+)
 ```
 
-## Introduction
+### Introduction
 
-Efficient market financial hypothesis thinks the market price could reflect all available information in the market, but in crypto-currency market, we find that some Key Opinion Leaders' arbitrary comments may influence the price. Among them, Elon Musk is the 最有影响力的KOL. 他的一句话，会在市场上引起腥风血雨。 Such Musk's impact is value-motivated or noise trading? Contrary to the prior investigation on the rise and fall, we focus on the variability risk.
+Efficient market financial hypothesis thinks the market price could reflect all available information in the market, but in crypto-currency market, we find that some Key Opinion Leaders' arbitrary comments may influence the price. Among them, Elon Musk is the most powerful KOL. His words can unleash a storm in the market. Is Musk's impact value-motivated or noise trading? Contrary to the prior investigation on the rise and fall, we focus on the variability risk.
 
-## Data & Descriptive statistics
+### Data & Descriptive statistics
 
-The bit coin data was collected by the `quantmod` package from Yahoo Finance. And I 手动整理了推文列表。
+The bit coin data was collected by the `quantmod` package from Yahoo Finance. And I manually curated the list of tweets.
 
 ```{r}
 library(ggplot2)
-f1 <- ggplot(btc_data,geom_line(x = Date, y= close))
+f1 <-  ggplot(data = btc_data, aes(x = Date, y = Close_price)) +
+  geom_line()+
+  labs(title = "BTC Daily Closing Price",
+       x = "date",
+       y = "Closing Price")+
+  theme_minimal()
+
+f1
+
 ```
 
-## Methodology
+```{r}
+library(stargazer)
+library(dplyr)
+BTC_RET <- btc_data |>
+  arrange(Date)|>
+  mutate(ret = Close_price /lag(Close_price)-1)|>
+  filter(!is.na(ret))
 
-## Empirical Results
+stargazer(BTC_RET$ret,
+          type = "latex",
+          title = "BTC daily return(specific parameters)",
+          digits = 4,
+          summary.stat = c("mean","sd","min","max","p25","p75","median"))
+```
 
-## Discussion& limitations
+### Methodology
 
-## Conclusion
+### 
 
-## References
+### Empirical Results
+
+### Discussion& limitations
+
+### Conclusion
+
+### References
+
+### 
