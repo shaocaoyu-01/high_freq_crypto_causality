@@ -1,5 +1,5 @@
 ---
-title: "Idiosyncratic Volatility and Social Media Sentiment: An Event Study of High-Profile Endorcements in Cryptocurrency Markets"
+title: "Textual Analysis of Federal Reserve Communications and Crypto Market Volatility: An Augmented GARCH Approach"
 format: 
   html: 
     code-fold: true
@@ -13,35 +13,7 @@ warning: false
 
 The social media has an increasing impact on the financial market. This report use the data from 2024 to 2025, analyses Elon musk's short-term impact of tweets on BTC prices by event study. We find that the
 
-Key words: Cryptocurrency; Event Study; Behavioral Finance; Social Media
-
-```{r}
-library(quantmod)
-library(tidyverse)
-library(lubridate)
-library(knitr)
-library(DT)
-
-# extract the BTC data(sourced from Yahoo Finance)
-getSymbols("BTC-USD",src = "yahoo", from = "2024-01-01")
-
-btc_data <- as.data.frame(`BTC-USD`) |>
-  rownames_to_column(var = 'Date')|>
-  mutate(Date = as.Date(Date))|>
-  select(Date, Close_price = `BTC-USD.Close`)
-
-datatable(
-  btc_data,
-  filter = "top",
-  extensions = "Buttons",
-  options = list(
-    pageLength = 10,
-    autoWidth = TRUE,
-    dom = "Bfrtip",
-    buttons = c("copy","csv","excel","pdf","print")
-  )
-)
-```
+Key words: crypto_currency; Event Study; Behavioral Finance; Social Media
 
 ### Introduction
 
@@ -49,31 +21,45 @@ Efficient market financial hypothesis thinks the market price could reflect all 
 
 ### Data & Descriptive statistics
 
-The bit coin data was collected by the `quantmod` package from Yahoo Finance. And I manually curated the list of tweets.
+The bit coin data was collected through Binance. And I manually curated the list of tweets.
 
 ```{r}
-library(ggplot2)
-f1 <-  ggplot(data = btc_data, aes(x = Date, y = Close_price)) +
-  geom_line()+
-  labs(title = "BTC Daily Closing Price",
-       x = "date",
-       y = "Closing Price")+
-  theme_minimal()
+# date acquisition
+btc_2024 <- get_binance_full_history("BTCUSDT", start_date = "2024-01-01")
 
-f1
+# check the date 
+print(head(btc_2024))
+print(tail(btc_2024))
 
+# simple plot
+plot(btc_2024$Date, btc_2024$Close, type="l", 
+     main="BTC Hourly Price (2024 - Present)", 
+     xlab="Date", ylab="Price (USDT)")
+
+
+
+library(DT)
+datatable(btc_2024,
+          rownames = FALSE,
+          options = list(
+            pageLength = 10,
+            lengthMenu = c(5,10,20,50),
+            searching = TRUE,
+            dom = 'Bfrtip',
+            buttons = c('copy','csv','excel','pdf','print')
+          ))
 ```
 
 ```{r}
 library(stargazer)
 library(dplyr)
-BTC_RET <- btc_data |>
+BTC_RET <- btc_2024 |>
   arrange(Date)|>
-  mutate(ret = Close_price /lag(Close_price)-1)|>
+  mutate(ret = Close /lag(Close)-1)|>
   filter(!is.na(ret))
 
 stargazer(BTC_RET$ret,
-          type = "latex",
+          type = "html",
           title = "BTC daily return(specific parameters)",
           digits = 4,
           summary.stat = c("mean","sd","min","max","p25","p75","median"))
