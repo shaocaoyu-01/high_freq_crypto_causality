@@ -11,9 +11,7 @@ warning: false
 
 ### Abstract
 
-The social media has an increasing impact on the financial market. This report use the data from 2024 to 2025, analyses Elon musk's short-term impact of tweets on BTC prices by event study. We find that the
-
-Key words: crypto_currency; Event Study; Behavioral Finance; Social Media
+With the increasing institutional adoption of cryptocurrencies, Bitcoin has transitioned from a niche speculative asset to a financial instrument highly sensitive to macroeconomic signaling. While the impact of numerical interest rate decisions on crypto markets is well-documented, the nuanced effects of central bank verbal communication remain under-explored, especially during periods of aggressive monetary tightening. This paper investigates the impact of Federal Reserve communications on Bitcoin market volatility during the 2022-2024 inflationary cycle. By applying **Natural Language Processing (NLP)** techniques to FOMC statements and minutes, we construct a time-varying "Hawkish-Dovish" sentiment index. We then employ an **Augmented GARCH-MIDAS framework** to analyze the transmission of these textual sentiment shocks to Bitcoin's conditional volatility. The empirical results demonstrate that the "tone" of Fed communication is a significant driver of market risk. Specifically, we find strong evidence of **asymmetry**: unanticipated "Hawkish" (restrictive) sentiment triggers significantly higher volatility persistence compared to "Dovish" signals. Furthermore, the inclusion of textual sentiment variables significantly improves the model's goodness-of-fit compared to baseline models relying solely on policy rate changes. These findings challenge the "digital gold" narrative, providing evidence that Bitcoin functions as a high-beta risk asset that is deeply intertwined with U.S. monetary policy uncertainty.
 
 ### Introduction
 
