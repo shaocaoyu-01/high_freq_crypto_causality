@@ -11,11 +11,17 @@ warning: false
 
 ### Abstract
 
-With the increasing institutional adoption of cryptocurrencies, Bitcoin has transitioned from a niche speculative asset to a financial instrument highly sensitive to macroeconomic signaling. While the impact of numerical interest rate decisions on crypto markets is well-documented, the nuanced effects of central bank verbal communication remain under-explored, especially during periods of aggressive monetary tightening. This paper investigates the impact of Federal Reserve communications on Bitcoin market volatility during the 2022-2024 inflationary cycle. By applying **Natural Language Processing (NLP)** techniques to FOMC statements and minutes, we construct a time-varying "Hawkish-Dovish" sentiment index. We then employ an **Augmented GARCH-MIDAS framework** to analyze the transmission of these textual sentiment shocks to Bitcoin's conditional volatility. The empirical results demonstrate that the "tone" of Fed communication is a significant driver of market risk. Specifically, we find strong evidence of **asymmetry**: unanticipated "Hawkish" (restrictive) sentiment triggers significantly higher volatility persistence compared to "Dovish" signals. Furthermore, the inclusion of textual sentiment variables significantly improves the model's goodness-of-fit compared to baseline models relying solely on policy rate changes. These findings challenge the "digital gold" narrative, providing evidence that Bitcoin functions as a high-beta risk asset that is deeply intertwined with U.S. monetary policy uncertainty.
+With the increasing institutional adoption of cryptocurrencies, Bitcoin has transitioned from a niche speculative asset to a financial instrument highly sensitive to macroeconomic signaling. While the impact of numerical interest rate decisions on crypto markets is well-documented, the nuanced effects of central bank verbal communication remain under-explored, especially during periods of aggressive monetary tightening. This paper investigates the impact of Federal Reserve communications on Bitcoin market volatility during the 2022-2024 inflationary cycle. By applying **Natural Language Processing** techniques to FOMC statements and minutes, we construct a time-varying "Hawkish-Dovish" sentiment index. We then employ an **Augmented GARCH-MIDAS framework** to analyze the transmission of these textual sentiment shocks to Bitcoin's conditional volatility. The empirical results demonstrate that the "tone" of Fed communication is a significant driver of market risk. Specifically, we find strong evidence of **asymmetry**: unanticipated "Hawkish" (restrictive) sentiment triggers significantly higher volatility persistence compared to "Dovish" signals. Furthermore, the inclusion of textual sentiment variables significantly improves the model's goodness-of-fit compared to baseline models relying solely on policy rate changes. These findings challenge the "digital gold" narrative, providing evidence that Bitcoin functions as a high-beta risk asset that is deeply intertwined with U.S. monetary policy uncertainty.
+
+Key words: Natural Language Processing; Augmented GARCH-MIDAS; crypto currency; Textual analysis
 
 ### Introduction
 
-Efficient market financial hypothesis thinks the market price could reflect all available information in the market, but in crypto-currency market, we find that some Key Opinion Leaders' arbitrary comments may influence the price. Among them, Elon Musk is the most powerful KOL. His words can unleash a storm in the market. Is Musk's impact value-motivated or noise trading? Contrary to the prior investigation on the rise and fall, we focus on the variability risk.
+Early empirical literature characterized Bitcoin as a hybrid asset, exhibiting features of both a medium of exchange and a speculative store of value similar to gold **(Dyhrberg, 2016)**. Consistent with its decentralized design, previous studies covering the 2015-2018 period suggested that Bitcoin's volatility was largely idiosyncratic and insulated from U.S. monetary policy shocks **(Nguyen et al., 2019)**.
+
+However, the landscape has shifted dramatically. With the acceleration of institutional adoption and the approval of spot ETFs, the cryptocurrency market has become increasingly integrated with global finance. Recent evidence suggests that Federal Reserve announcements significantly impact crypto-asset dynamics **(Corbet et al., 2017)**. Furthermore, in traditional markets, research indicates that the textual sentiment of central bank statements often exerts a more profound impact on asset volatility than numerical interest rate changes alone **(Rosa, 2011)**. Yet, it remains unclear whether this "textual channel" of monetary policy transmission has fully permeated the modern cryptocurrency market during the recent tightening cycle.
+
+To address this question, this paper employs **Natural Language Processing (NLP)** to quantify the sentiment of Federal Reserve communications. Using an **Augmented GARCH framework**, we test the volatility spillover effects of these textual signals on the cryptocurrency market, specifically examining whether market reactions exhibit asymmetry in response to hawkish versus dovish tones.
 
 ### Data & Descriptive statistics
 
@@ -23,21 +29,21 @@ The bit coin data was collected through Binance. And I manually curated the list
 
 ```{r}
 # date acquisition
-btc_2024 <- get_binance_full_history("BTCUSDT", start_date = "2024-01-01")
+btc_data <- get_binance_full_history("BTCUSDT", start_date = "2022-01-01")
 
 # check the date 
-print(head(btc_2024))
-print(tail(btc_2024))
+print(head(btc_data))
+print(tail(btc_data))
 
 # simple plot
-plot(btc_2024$Date, btc_2024$Close, type="l", 
-     main="BTC Hourly Price (2024 - Present)", 
+plot(btc_data$Date, btc_data$Close, type="l", 
+     main="BTC Hourly Price (2022 - Present)", 
      xlab="Date", ylab="Price (USDT)")
 
 
 
 library(DT)
-datatable(btc_2024,
+datatable(btc_data,
           rownames = FALSE,
           options = list(
             pageLength = 10,
@@ -51,7 +57,7 @@ datatable(btc_2024,
 ```{r}
 library(stargazer)
 library(dplyr)
-BTC_RET <- btc_2024 |>
+BTC_RET <- btc_data |>
   arrange(Date)|>
   mutate(ret = Close /lag(Close)-1)|>
   filter(!is.na(ret))
@@ -65,7 +71,54 @@ stargazer(BTC_RET$ret,
 
 ### Methodology
 
-### 
+```{r}
+library(rugarch)
+library(xts)
+library(tidyverse)
+
+set.seed(123)
+dates <- seq(as.Date("2022-01-01"),as.Date("2024-01-01"),by = "day")
+n<- length(dates)
+btc_returns <- rnorm(n,mean = 0, sd = 0.05)
+
+fed_sentiment <- rnorm(n, mean = 0, sd = 1) 
+
+data_xts <- xts(cbind(btc_returns, fed_sentiment), order.by = dates)
+colnames(data_xts) <- c("Returns", "Sentiment")
+
+head(data_xts)
+
+
+regressors <- matrix(data_xts$Sentiment, ncol = 1)
+
+spec_augmented <- ugarchspec(
+  
+ 
+  mean.model = list(
+    armaOrder = c(1, 0), 
+    include.mean = TRUE
+  ),
+  
+  
+  variance.model = list(
+    model = "eGARCH",       
+    garchOrder = c(1, 1),
+    external.regressors = regressors 
+  ),
+  
+ 
+  distribution.model = "std" 
+)
+
+# --- 4. 拟合模型 (Fit the Model) ---
+fit_augmented <- ugarchfit(spec = spec_augmented, data = data_xts$Returns)
+
+# --- 5. 查看结果 ---
+ show(fit_augmented) # 运行这行看完整报告，下面展示如何提取核心指标
+
+# 提取系数矩阵
+print(coef(fit_augmented))
+```
 
 ### Empirical Results
 

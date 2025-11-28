@@ -3,7 +3,7 @@ library(jsonlite)
 library(dplyr)
 library(lubridate)
 
-get_binance_full_history <- function(symbol = "BTCUSDT", start_date = "2024-01-01", interval = "1h") {
+get_binance_full_history <- function(symbol = "BTCUSDT", start_date = "2022-01-01", interval = "1h") {
   
   base_url <- "https://api.binance.com/api/v3/klines"
   
