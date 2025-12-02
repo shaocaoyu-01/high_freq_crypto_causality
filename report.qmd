@@ -23,27 +23,66 @@ However, the landscape has shifted dramatically. With the acceleration of instit
 
 To address this question, this paper employs **Natural Language Processing (NLP)** to quantify the sentiment of Federal Reserve communications. Using an **Augmented GARCH framework**, we test the volatility spillover effects of these textual signals on the cryptocurrency market, specifically examining whether market reactions exhibit asymmetry in response to hawkish versus dovish tones.
 
+### Literature review
+
 ### Data & Descriptive statistics
 
 The bit coin data was collected through Binance. And I manually curated the list of tweets.
 
 ```{r}
-# date acquisition
-btc_data <- get_binance_full_history("BTCUSDT", start_date = "2022-01-01")
+library(quantmod)
+library(dplyr)
+library(zoo)
+library(ggplot2)
 
-# check the date 
-print(head(btc_data))
-print(tail(btc_data))
+# 1. download the data of Bitcoin and Nasdaq
+getSymbols("BTC-USD", src = "yahoo", from = "2015-01-01", to = "2024-12-31")
+getSymbols("^NDX",    src = "yahoo", from = "2015-01-01", to = "2024-12-31")
 
-# simple plot
-plot(btc_data$Date, btc_data$Close, type="l", 
-     main="BTC Hourly Price (2022 - Present)", 
-     xlab="Date", ylab="Price (USDT)")
+# 2. calculate the daily log return
+btc_ret <- dailyReturn(Cl(`BTC-USD`), type = "log")
+ndx_ret <- dailyReturn(Cl(`NDX`),    type = "log")
 
+# 3. correspond them by date 
+ret_merged <- merge(btc_ret, ndx_ret, join = "inner")
+colnames(ret_merged) <- c("btc", "ndx")
 
+# 4. calculate the rolling windows
+window <- 90  
+roll_cor <- rollapply(
+  ret_merged,
+  width = window,
+  FUN = function(x) cor(x[,"btc"], x[,"ndx"], use = "complete.obs"),
+  by.column = FALSE,
+  align = "right"
+)
 
+# 5. 转成 data.frame 用 ggplot 画图
+cor_df <- data.frame(
+  date = index(roll_cor),
+  cor  = coredata(roll_cor)
+)
+
+ggplot(cor_df, aes(x = date, y = cor)) +
+  geom_line() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  labs(
+    title    = paste0("Figure1.",window, "-day Rolling Correlation: Bitcoin vs Nasdaq-100"),
+    x        = "Date",
+    y        = "Rolling Pearson correlation"
+  ) +
+  theme_minimal()
+
+```
+Figure1 plots 90 day rolling pearson correlation between daily log return of Bitcoin and Nasdaq-100 index from 2015 to present. 
+Before 2017, we find that the rolling pearson correlation between daily log return of Bitcoin and Nasdaq-100 is low.
+From 2017 to 2020, we find the number has a larger volatility and move upward generally speaking.
+After 2020, the number increased sharply and reached all time high. And then, the number range from 0.2 to 0.5 most of the time.
+This gradual increase in correlation suggests that Bitcoin has become more integrated with mainstream financial markets, which motivates our subsequent GARCH-based analysis of its volatility dynamics and spillovers.
+
+```{r}
 library(DT)
-datatable(btc_data,
+datatable(btc_ret,
           rownames = FALSE,
           options = list(
             pageLength = 10,
@@ -57,7 +96,7 @@ datatable(btc_data,
 ```{r}
 library(stargazer)
 library(dplyr)
-BTC_RET <- btc_data |>
+BTC_RET <- btc_ret |>
   arrange(Date)|>
   mutate(ret = Close /lag(Close)-1)|>
   filter(!is.na(ret))
