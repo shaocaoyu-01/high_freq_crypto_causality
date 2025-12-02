@@ -57,7 +57,7 @@ roll_cor <- rollapply(
   align = "right"
 )
 
-# 5. 转成 data.frame 用 ggplot 画图
+# 5. covert into dataframe and draw a plot
 cor_df <- data.frame(
   date = index(roll_cor),
   cor  = coredata(roll_cor)
@@ -74,11 +74,8 @@ ggplot(cor_df, aes(x = date, y = cor)) +
   theme_minimal()
 
 ```
-Figure1 plots 90 day rolling pearson correlation between daily log return of Bitcoin and Nasdaq-100 index from 2015 to present. 
-Before 2017, we find that the rolling pearson correlation between daily log return of Bitcoin and Nasdaq-100 is low.
-From 2017 to 2020, we find the number has a larger volatility and move upward generally speaking.
-After 2020, the number increased sharply and reached all time high. And then, the number range from 0.2 to 0.5 most of the time.
-This gradual increase in correlation suggests that Bitcoin has become more integrated with mainstream financial markets, which motivates our subsequent GARCH-based analysis of its volatility dynamics and spillovers.
+
+Figure1 plots 90 day rolling pearson correlation between daily log return of Bitcoin and Nasdaq-100 index from 2015 to present. Before 2017, we find that the rolling pearson correlation between daily log return of Bitcoin and Nasdaq-100 is low. From 2017 to 2020, we find the number has a larger volatility and move upward generally speaking. After 2020, the number increased sharply and reached all time high. And then, the number range from 0.2 to 0.5 most of the time. This gradual increase in correlation suggests that Bitcoin has become more integrated with mainstream financial markets, which motivates our subsequent GARCH-based analysis of its volatility dynamics and spillovers.
 
 ```{r}
 library(DT)
@@ -107,6 +104,22 @@ stargazer(BTC_RET$ret,
           digits = 4,
           summary.stat = c("mean","sd","min","max","p25","p75","median"))
 ```
+
+```{r}
+library(readxl)
+d1 <- read_excel("text.xlsx")
+d2 <- read.csv("dictionary.csv")
+```
+
+"Standard sentiment dictionaries(e.g.,Harvard IV-4)often misclassify financial terminology. Following the seminal work of Loughran and McDonald(2011), who argue the necessity of domain-specific lexicons in financial research, this paper constructs a specialized 'hawkish-dovish' dictionary tailored for central bank communications.
+
+Unlike corporate earnings calls where 'positive' or 'negative' tones are paramount, the primary driver of asset volatility in the context of the Federal Reserve is the policy inclination towards tightening(Hawkish) or easing(Dovish). Drawing on thw monetary policy word lists established by apel and Blix(2017) and recent crypto-macro literature, we define two specific sets of keywords:
+
+Hawkish Terms: Words associated with  inflation concerns and restrictive policy
+
+Dovish Terms: words associated with deflation concerns and accomodative policy
+
+
 
 ### Methodology
 
@@ -167,4 +180,3 @@ print(coef(fit_augmented))
 
 ### References
 
-### 
