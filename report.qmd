@@ -119,8 +119,125 @@ Hawkish Terms: Words associated with  inflation concerns and restrictive policy
 
 Dovish Terms: words associated with deflation concerns and accomodative policy
 
+To quantify the quanlitative content of the FOMC statements, we employ a Net Sentiment Score(NSS) approach. For each statement t, we calculate the frequency of Hawkish(Ht) and Dovish(Dt) terms. To control for the varying length of documents over time, the raw counts are normalized by the total number of sentiment-charged  words.
+
+The net Hawkish-Dovish Index is defined as follows:
+
+             St = (Ht- Dt)/(Ht+Dt)
+             
+Where: 
+ Ht represents the count of Hawkish keywords in the statement at time t.
+ Dt represents the count of Dovish keywords in the statement at time t.
+ 
+ This index ranges from -1 to 1. A positive value (St >0) indicates a net hawkish tone, suggesting potential interest rate hikes or liquidity withdrawal. Conversely, a negative value indicated a net Dovish(accommodative) tone. A value of zero implied a neutral stance.
+ 
+```{r}
+library(tidyverse)
+library(tidytext)
+library(stringr)
+library(lubridate) 
+library(readr) 
 
 
+dovish <- read.csv("dovish.csv")
+dovish <- dovish |> mutate(sentiment = "dovish") |> select(Word,sentiment)
+hawkish <- read.csv("hawkish.csv")
+hawkish <- hawkish |> mutate(sentiment = "hawkish")|> select(Word,sentiment)
+
+custom_dictionary <- bind_rows(hawkish,dovish)
+
+write_csv(custom_dictionary, "custom_dictionary.csv")
+
+library(dplyr)
+library(stringr) 
+
+custom_dictionary <- read.csv("custom_dictionary.csv", stringsAsFactors = FALSE)
+
+
+custom_dictionary <- custom_dictionary %>%
+  mutate(Word = tolower(Word)) 
+
+
+
+
+
+
+
+raw_data <- read_csv("fomc_data.csv", show_col_types = FALSE)
+
+
+raw_data <- raw_data %>%
+  mutate(date = as.Date(date))
+
+
+tidy_text <- raw_data %>%
+  unnest_tokens(word, text) 
+
+sentiment_result <- tidy_text %>%
+  inner_join(custom_dictionary, by = c("word" = "Word"))
+
+
+sentiment_index <- sentiment_result |>
+  
+
+  count(date, sentiment) %>%
+  
+
+  pivot_wider(names_from = sentiment, values_from = n, values_fill = 0) %>%
+  
+
+  bind_rows(tibble(date = as.Date(character()), hawkish = numeric(), dovish = numeric())) %>%
+  mutate(
+    hawkish = if("hawkish" %in% names(.)) hawkish else 0,
+    dovish  = if("dovish" %in% names(.)) dovish else 0
+  ) %>%
+  
+
+  mutate(
+    total_sentiment_words = hawkish + dovish,
+  
+    net_score = (hawkish - dovish) / (total_sentiment_words + 0.001)
+  ) %>%
+  
+ 
+  select(date, hawkish, dovish, net_score) %>%
+  arrange(date) 
+
+
+
+# 3.1 打印前几行看看
+print(head(sentiment_index))
+
+# 3.2 保存为新的 CSV 文件 (这个文件就是你 GARCH 模型的输入变量)
+write_csv(sentiment_index, "fomc_sentiment_index.csv")
+cat("计算完成！结果已保存为 'fomc_sentiment_index.csv'\n")
+
+# ==============================================================================
+# 步骤 4: 画图检查 (Visualize)
+# 这一步是为了放在论文里，证明你的指数捕捉到了政策变化
+# ==============================================================================
+
+ggplot(sentiment_index, aes(x = date, y = net_score)) +
+  # 画柱状图
+  geom_col(aes(fill = net_score > 0), show.legend = FALSE) +
+  # 添加趋势线
+  geom_line(color = "black", alpha = 0.3) +
+  # 颜色设置：红色代表鹰派(>0)，蓝色代表鸽派(<0)
+  scale_fill_manual(values = c("TRUE" = "firebrick", "FALSE" = "steelblue")) +
+  # 设置标题和标签
+  labs(
+    title = "Federal Reserve Hawkish-Dovish Sentiment Index (2022-present)",
+    subtitle = "Derived from FOMC Statements using Textual Analysis",
+    y = "Net Sentiment Score (Hawkish > 0, Dovish < 0)",
+    x = "Meeting Date"
+  ) +
+  # 设置 y 轴范围 (-1 到 1)
+  ylim(-1, 1) +
+  # 主题美化
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold"))
+```
+ 
 ### Methodology
 
 ```{r}
