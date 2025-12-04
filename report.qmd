@@ -249,11 +249,37 @@ Here we have some pre- processing like translate the LM dictionary into lowercas
 
 In the Loughran and McDonald master dictionary, we define Negative, Uncertainty and Constraining the three lists as Hawkish tone and define Positive list as Dovish tone since the Fed express their constrain standpoints by emphasize the Uncertainty, Constraining policies and Negative prospect.
 
- St = (Ht- Dt)/(Ht+Dt)
- 
+St = (Ht- Dt)/(Ht+Dt)
+
 #### Economic Model
 
-We find that from the textual statement of the 
+Decomposition of sentiment shocks 
+$$
+\Delta \text{Tone}_t = \text{Tone}_t - \text{Tone}_{t-1}
+$$
+
+**Hawkish Intensification(hawkish news)：**
+$$
+\text{Shock}_t^+ = \max \bigl(0,\, \Delta \text{Tone}_t \bigr)
+$$
+
+**Hawkish Moderation(dovish news)：**
+$$
+\text{Shock}_t^- = \bigl| \min \bigl(0,\, \Delta \text{Tone}_t \bigr) \bigr|
+$$
+#### Regression Equation
+$$
+\text{Vol}_t = \alpha 
++ \beta_1 \text{Shock}_t^+ 
++ \beta_2 \text{Shock}_t^- 
++ \gamma \,\text{Controls}_t 
++ \epsilon_t
+$$
+The equation above indicates relationship between the crypto currency volatility 
+and its tone shocks. \beta_1 means the volatility response to harkish tones shocks, while the \beta_2 means the volatility response to dovish tones shocks.
+
+#### Descriptive Statistics
+
 
 ### Empirical Results
 
@@ -305,6 +331,59 @@ fit_augmented <- ugarchfit(spec = spec_augmented, data = data_xts$Returns)
 # 提取系数矩阵
 print(coef(fit_augmented))
 ```
+
+```{r}
+# 1. 加载必要的包
+library(quantmod) # 金融数据下载神器
+library(dplyr)
+library(lubridate)
+
+# 2. 设置时间范围 (2020年至今)
+start_date <- "2020-01-01"
+end_date <- Sys.Date() # 直到今天
+
+# -------------------------------------------------------
+# 方法 A: 获取 VIX 数据 (恐慌指数)
+# -------------------------------------------------------
+getSymbols("^VIX", src = "yahoo", from = start_date, to = end_date)
+
+# 转换为数据框
+vix_data <- data.frame(Date = index(VIX), coredata(VIX)) %>%
+  select(Date, VIX.Open, VIX.Close) %>%
+  mutate(
+    # 计算 VIX 的变化量 (Change in VIX)
+    # 逻辑：收盘价减去开盘价，代表当天的会议让恐慌增加了多少
+    Vol_VIX_Change = VIX.Close - VIX.Open,
+    # 或者直接用收盘价
+    Vol_VIX_Level = VIX.Close
+  )
+
+
+# -------------------------------------------------------
+# 3. 将波动率数据与你的 FOMC 会议日期合并
+# -------------------------------------------------------
+
+# 假设你有一个包含 FOMC 会议日期的表格叫 fomc_meetings
+# 这里我模拟生成一个简单的会议日期表 (仅作示例)
+fomc_meetings <- data.frame(
+  Date = as.Date(c("2022-03-16", "2022-05-04", "2022-06-15", "2024-01-31")) 
+  # ... 你需要把你所有的真实会议日期放进去
+)
+
+# 合并数据 (Inner Join)
+# 只有当 Date 既是会议日，又有交易数据时才保留
+final_regression_data <- fomc_meetings %>%
+  inner_join(vix_data, by = "Date") %>%
+  inner_join(sp500_data, by = "Date")
+
+# 4. 查看结果
+head(final_regression_data)
+
+# 现在，final_regression_data 里面就有了：
+# - Vol_VIX_Change (可以用作因变量 Y)
+# - Vol_Realized_Parkinson (也可以用作因变量 Y，做稳健性检验)
+```
+
 
 ### Discussion& limitations
 
